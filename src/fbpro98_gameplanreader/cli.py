@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -41,6 +42,10 @@ def write_output(lines: list[str], output_path: str | None) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s: %(message)s",
+    )
     reader = GamePlanReader(args.gameplan)
     lines = reader.get_normal_plays(args.sort)
     write_output(lines, args.output)
