@@ -4,7 +4,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Literal
 
-from fbpro98_gameplan import PLN, read_gameplan
+from fbpro98_gameplan import GamePlan, read_gameplan
 
 StrPath = str | PathLike[str]
 SortOrder = Literal["slot", "name"]
@@ -13,7 +13,7 @@ SortOrder = Literal["slot", "name"]
 class GamePlanReader:
     def __init__(self, gameplan_path: StrPath) -> None:
         self.gameplan_path = Path(gameplan_path)
-        self._gameplan: PLN | None = None
+        self._gameplan: GamePlan | None = None
 
     def get_normal_plays(self, sort: SortOrder = "slot") -> list[str]:
         if sort == "slot":
@@ -23,7 +23,7 @@ class GamePlanReader:
             key=str.casefold,
         )
 
-    def _load(self) -> PLN:
+    def _load(self) -> GamePlan:
         if self._gameplan is None:
             self._gameplan = read_gameplan(self.gameplan_path)
         return self._gameplan

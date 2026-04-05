@@ -1,3 +1,3 @@
-from pathlib import Path
+from .gameplan_reader import GamePlanReader
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+__all__ = ["GamePlanReader"]
