@@ -10,7 +10,7 @@ from .gameplan_reader import GamePlanReader
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="fbpro98-gameplanreader",
+        prog="pnfl read-gameplan",
         description="Read a .pln file and list plays from the gameplan.",
     )
     parser.add_argument("gameplan", help="Path to the .pln file")

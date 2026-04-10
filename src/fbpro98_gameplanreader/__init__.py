@@ -1,3 +1,5 @@
-from .gameplan_reader import GamePlanReader
+"""fbpro98-gameplanreader package."""
 
-__all__ = ["GamePlanReader"]
+from .cli import main
+
+__all__ = ["main"]
