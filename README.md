@@ -25,12 +25,6 @@ pnfl read-gameplan path\to\gameplan.pln --sort name
 pnfl read-gameplan path\to\gameplan.pln --output plays.txt
 ```
 
-Or via module:
-
-```bash
-py -m fbpro98_gameplanreader path\to\gameplan.pln
-```
-
 Notes:
 
 - `--sort slot` is the default.
@@ -47,10 +41,3 @@ See `pnfl/scripts/build_release.py` for release packaging.
 ```bash
 pytest
 ```
-
-Tests cover:
-
-- offense fixture by slot
-- offense fixture by name
-- defense fixture by slot
-- defense fixture by name

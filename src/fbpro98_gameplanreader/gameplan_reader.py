@@ -30,10 +30,4 @@ class GamePlanReader:
 
     def _get_normal_plays_by_slot(self) -> list[str]:
         gameplan = self._load()
-        names: list[str] = []
-
-        for slot in range(gameplan.NUMBER_NORMAL_PLAYS):
-            play = gameplan.plays_by_slot.get(slot)
-            names.append("" if play is None else play.name)
-
-        return names
+        return ["" if play is None else play.name for play in gameplan.normal_plays]

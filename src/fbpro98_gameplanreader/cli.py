@@ -5,7 +5,7 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-from .gameplan_reader import GamePlanReader
+from fbpro98_gameplanreader.gameplan_reader import GamePlanReader
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -16,13 +16,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("gameplan", help="Path to the .pln file")
     parser.add_argument(
         "--output",
-        help="Optional path to write the extracted play list",
+        metavar="FILE",
+        help="Write extracted play list to FILE (default: stdout)",
     )
     parser.add_argument(
         "--sort",
         choices=("slot", "name"),
         default="slot",
-        help="Sort output by slot order or alphabetically by name",
+        help="Sort order for the normal plays (default: %(default)s)",
     )
     return parser
 
