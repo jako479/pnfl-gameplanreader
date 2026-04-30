@@ -1,7 +1,7 @@
+from io import StringIO
 from pathlib import Path
 
 from fbpro98_gameplanreader.gameplan_reader import GamePlanReader
-
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 OFFENSE_PATH = TEST_DATA_DIR / "offense.pln"
@@ -258,6 +258,33 @@ EXPECTED_DEFENSE_BY_NAME = [
 ]
 
 
+EXPECTED_OFFENSE_CUSTOM_SPECIAL = [
+    "BCFGPAT",
+    "LACokick",
+    "LAC-PUNT",
+    "DBONSIDE",
+    "",
+    "",
+    "",
+    "",
+    "BCFREEK",
+    "BCSQUIB",
+]
+
+EXPECTED_DEFENSE_CUSTOM_SPECIAL = [
+    "",
+    "CIN-KR",
+    "SKINPRW6",
+    "BC-ON-R",
+    "SFFKFGRD",
+    "SFFFGPas",
+    "SFFKPTRD",
+    "SFFPuntD",
+    "BCFREERT",
+    "BCSQUIBR",
+]
+
+
 def test_offense_normal_plays_by_slot() -> None:
     reader = GamePlanReader(OFFENSE_PATH)
     assert reader.get_normal_plays("slot") == EXPECTED_OFFENSE_BY_SLOT
@@ -276,3 +303,67 @@ def test_defense_normal_plays_by_slot() -> None:
 def test_defense_normal_plays_by_name() -> None:
     reader = GamePlanReader(DEFENSE_PATH)
     assert reader.get_normal_plays("name") == EXPECTED_DEFENSE_BY_NAME
+
+
+def test_offense_custom_special_plays_in_slot_order() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    assert reader.get_custom_special_plays() == EXPECTED_OFFENSE_CUSTOM_SPECIAL
+
+
+def test_defense_custom_special_plays_in_slot_order() -> None:
+    reader = GamePlanReader(DEFENSE_PATH)
+    assert reader.get_custom_special_plays() == EXPECTED_DEFENSE_CUSTOM_SPECIAL
+
+
+def test_custom_special_plays_returns_exactly_ten_entries() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    assert len(reader.get_custom_special_plays()) == 10
+
+
+def test_custom_special_plays_uses_blank_for_empty_slot() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    plays = reader.get_custom_special_plays()
+    # Slots 5-8 (indices 4-7) are empty in the offense fixture
+    for i in range(4, 8):
+        assert plays[i] == ""
+
+
+# ---------- stream-write methods ----------
+
+
+def test_write_normal_plays_emits_64_lines_no_header() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    out = StringIO()
+    reader.write_normal_plays(out)
+    text = out.getvalue()
+    assert "===" not in text
+    lines = text.splitlines()
+    assert len(lines) == 64
+    assert lines == EXPECTED_OFFENSE_BY_SLOT
+
+
+def test_write_normal_plays_honors_sort_name() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    out = StringIO()
+    reader.write_normal_plays(out, sort="name")
+    assert out.getvalue().splitlines() == EXPECTED_OFFENSE_BY_NAME
+
+
+def test_write_custom_special_plays_emits_10_lines_no_header() -> None:
+    reader = GamePlanReader(OFFENSE_PATH)
+    out = StringIO()
+    reader.write_custom_special_plays(out)
+    text = out.getvalue()
+    assert "===" not in text
+    lines = text.splitlines()
+    assert len(lines) == 10
+    assert lines == EXPECTED_OFFENSE_CUSTOM_SPECIAL
+
+
+def test_write_methods_round_trip_via_stringio_then_lines() -> None:
+    """Stream-write output is identical to the data accessor + manual join."""
+    reader = GamePlanReader(OFFENSE_PATH)
+    out = StringIO()
+    reader.write_normal_plays(out)
+    expected = "\n".join(reader.get_normal_plays()) + "\n"
+    assert out.getvalue() == expected
