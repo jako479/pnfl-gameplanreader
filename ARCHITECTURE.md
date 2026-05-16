@@ -1,0 +1,66 @@
+# fbpro98-gameplanreader — Architecture
+
+CLI tool that reads a `.pln` gameplan and emits its plays as plain text — to file(s), stdout, or both.
+
+For system-level context, see [pnfl-docs/Design/gameplan-architecture.md](../pnfl-docs/Design/gameplan-architecture.md).
+
+For validation ownership, see [pnfl-docs/Design/gameplan-validation.md](../pnfl-docs/Design/gameplan-validation.md).
+
+## Module layout
+
+```
+src/fbpro98_gameplanreader/
+├── __init__.py
+├── cli.py                 # argparse, output dispatch, main()
+└── gameplan_reader.py     # GamePlanReader class, get_*/write_* methods
+```
+
+## What this package does
+
+- Provides a CLI: `pnfl read-gameplan SRC.pln [--normal-out FILE] [--special-out FILE] [--sort slot|name]`
+- Reads a `.pln` via `fbpro98-gameplan.read_gameplan()`
+- Emits plays in two layouts:
+  - `--normal-out` (or `-`) → 64 lines, one per normal slot, blanks for empty slots
+  - `--special-out` (or `-`) → 10 lines, one per custom-special slot
+  - default mode (no flags) → both sections to stdout with `=== Normal ===` / `=== Special ===` headers
+- Supports both file paths and `-` for stdout per flag
+
+## What this package assumes
+
+- The `.pln` file is well-formed (or will fail loudly via `InvalidGamePlanError` from the underlying parser)
+- The user only consumes default-mode stdout for human reading; machine-readable output requires the headerless flag modes
+
+## What this package enforces
+
+CLI-level (raise SystemExit):
+- `gameplan_path` provided
+- `--sort` ∈ {`slot`, `name`}
+- Same non-`-` path for both `--normal-out` and `--special-out` rejected
+
+It does **not** validate the `.pln` itself — that responsibility belongs to `fbpro98-gameplan`.
+
+## What this package does NOT do
+
+- Parse `.pln` bytes (delegates to `fbpro98-gameplan`)
+- Resolve play names to pool records (the `GamePlan` already holds names)
+- Modify any file
+- Use `pnfl-playpool` or `fbpro98-play` — neither is needed for read-out
+
+## Output contract
+
+The headerless modes are the **machine-readable contract**. They are designed to be consumed by `fbpro98-gameplanwriter` directly:
+
+- `--normal-out -` → 64 lines (writer's `--normal-plays -` accepts this)
+- `--special-out -` → 10 lines (writer's `--special-plays -` accepts this)
+- `--normal-out - --special-out -` → 74 lines (writer accepts via shared stdin source)
+
+The default (with-headers) mode is **human-only**. The writer cannot consume it.
+
+## Testing
+
+- `tests/test_gameplan_reader.py` — `GamePlanReader` class methods against golden text fixtures
+- `tests/test_cli.py` — argparse contract and `main()` output for every flag combination, asserted against golden text fixtures
+
+Fixtures live in `tests/data/`:
+- `offense.pln` / `defense.pln` — game-produced binary inputs (shared with `fbpro98-gameplan`)
+- `expected/` — `.txt` files that pin every output mode for both gameplans

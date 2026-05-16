@@ -36,27 +36,30 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Output routing:\n"
-            "  --output FILE          Write 64 normal plays to FILE (no header).\n"
-            "  --output-special FILE  Write 10 custom special teams plays to FILE (no header).\n"
+            "  --normal-out FILE   Write 64 normal plays to FILE (no header).\n"
+            "  --special-out FILE  Write 10 custom special teams plays to FILE (no header).\n"
             "  Use '-' as FILE to send that section to stdout with no header.\n"
-            "  When neither flag is given, both sections are printed to stdout\n"
-            "    with '=== Normal ===' and '=== Special ===' headers.\n"
+            "  When neither flag is given, both sections are printed to stdout with\n"
+            "    '=== Normal ===' and '=== Special ===' headers for human reading.\n"
+            "    This format is not consumable by pnfl write-gameplan; use the '-'\n"
+            "    flags above when piping to the writer.\n"
             "  When both flags specify a file path, the paths must differ.\n"
             "\n"
             "Pipeline-friendly examples:\n"
-            "  pnfl read-gameplan src.pln | pnfl write-gameplan dest.pln --normal-plays -\n"
-            "  pnfl read-gameplan src.pln --output - --output-special - | ...\n"
+            "  pnfl read-gameplan src.pln --normal-out - | pnfl write-gameplan dest.pln --normal-plays -\n"
+            "  pnfl read-gameplan src.pln --normal-out - --special-out - | pnfl write-gameplan dest.pln --normal-plays - --special-plays -\n"
         ),
     )
     parser.add_argument("gameplan_path", help="Path to the .pln file")
     parser.add_argument(
-        "--output",
+        "--normal-out",
+        dest="normal_out",
         metavar="FILE",
         help="Write the 64 normal plays to FILE (or '-' for stdout)",
     )
     parser.add_argument(
-        "--output-special",
-        dest="output_special",
+        "--special-out",
+        dest="special_out",
         metavar="FILE",
         help="Write the 10 custom special teams plays to FILE (or '-' for stdout)",
     )
@@ -72,21 +75,21 @@ def build_parser() -> argparse.ArgumentParser:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = build_parser()
     args = parser.parse_args(argv)
-    _validate_outputs(parser, args.output, args.output_special)
+    _validate_outputs(parser, args.normal_out, args.special_out)
     return args
 
 
 def _validate_outputs(
     parser: argparse.ArgumentParser,
-    output: str | None,
-    output_special: str | None,
+    normal_out: str | None,
+    special_out: str | None,
 ) -> None:
-    if output is None or output_special is None:
+    if normal_out is None or special_out is None:
         return
-    if output == STDOUT_TOKEN or output_special == STDOUT_TOKEN:
+    if normal_out == STDOUT_TOKEN or special_out == STDOUT_TOKEN:
         return
-    if Path(output).resolve() == Path(output_special).resolve():
-        parser.error("--output and --output-special must point to different files")
+    if Path(normal_out).resolve() == Path(special_out).resolve():
+        parser.error("--normal-out and --special-out must point to different files")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -97,17 +100,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     reader = GamePlanReader(args.gameplan_path)
 
-    if args.output is None and args.output_special is None:
+    if args.normal_out is None and args.special_out is None:
         sys.stdout.write(f"{NORMAL_HEADER}\n")
         reader.write_normal_plays(sys.stdout, sort=args.sort)
-        sys.stdout.write(f"{SPECIAL_HEADER}\n")
+        sys.stdout.write(f"\n{SPECIAL_HEADER}\n")
         reader.write_custom_special_plays(sys.stdout)
         return 0
-    if args.output is not None:
-        with open_output(args.output) as f:
+    if args.normal_out is not None:
+        with open_output(args.normal_out) as f:
             reader.write_normal_plays(f, sort=args.sort)
-    if args.output_special is not None:
-        with open_output(args.output_special) as f:
+    if args.special_out is not None:
+        with open_output(args.special_out) as f:
             reader.write_custom_special_plays(f)
     return 0
 

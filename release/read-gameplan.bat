@@ -9,6 +9,6 @@ cd /d "%~dp0"
 SET GAMEPLAN_FILE=C:\PATH\TO\GAMEPLAN.pln
 SET OUTPUT_FILE=C:\PATH\TO\PLAYS.txt
 
-pnfl read-gameplan "%GAMEPLAN_FILE%" --output "%OUTPUT_FILE%"
+pnfl read-gameplan "%GAMEPLAN_FILE%" --normal-out "%OUTPUT_FILE%"
 
 pause

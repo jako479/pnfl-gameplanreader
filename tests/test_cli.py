@@ -7,72 +7,74 @@ import pytest
 from fbpro98_gameplanreader.cli import main, parse_args
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
+EXPECTED_DIR = TEST_DATA_DIR / "expected"
 OFFENSE_PATH = TEST_DATA_DIR / "offense.pln"
 DEFENSE_PATH = TEST_DATA_DIR / "defense.pln"
 
-KNOWN_NORMAL_NAME = "OR45RL01"
-KNOWN_SPECIAL_NAME = "BCFGPAT"
+
+def _expected(name: str) -> list[str]:
+    return (EXPECTED_DIR / name).read_text(encoding="utf-8").splitlines()
 
 
-# ---------- argparse ----------
+def _captured_stdout_lines(capsys: pytest.CaptureFixture[str]) -> list[str]:
+    return capsys.readouterr().out.splitlines()
 
 
-def test_parse_args_requires_gameplan() -> None:
+def _file_lines(path: Path) -> list[str]:
+    return path.read_text(encoding="utf-8").splitlines()
+
+
+# ---------- argparse contract ----------
+
+
+def test_parse_args_requires_gameplan_path() -> None:
     with pytest.raises(SystemExit):
         parse_args([])
 
 
-def test_parse_args_defaults() -> None:
+def test_parse_args_default_sort_is_slot() -> None:
     args = parse_args(["offense.pln"])
     assert args.gameplan_path == "offense.pln"
-    assert args.output is None
-    assert args.output_special is None
+    assert args.normal_out is None
+    assert args.special_out is None
     assert args.sort == "slot"
 
 
-def test_parse_args_accepts_output_only() -> None:
-    args = parse_args(["offense.pln", "--output", "plays.txt"])
-    assert args.output == "plays.txt"
-    assert args.output_special is None
+def test_parse_args_accepts_output_path() -> None:
+    args = parse_args(["offense.pln", "--normal-out", "plays.txt"])
+    assert args.normal_out == "plays.txt"
 
 
-def test_parse_args_accepts_output_special_only() -> None:
-    args = parse_args(["offense.pln", "--output-special", "spec.txt"])
-    assert args.output is None
-    assert args.output_special == "spec.txt"
+def test_parse_args_accepts_output_special_path() -> None:
+    args = parse_args(["offense.pln", "--special-out", "spec.txt"])
+    assert args.special_out == "spec.txt"
 
 
-def test_parse_args_accepts_both_output_flags() -> None:
-    args = parse_args(["offense.pln", "--output", "n.txt", "--output-special", "s.txt"])
-    assert args.output == "n.txt"
-    assert args.output_special == "s.txt"
+def test_parse_args_accepts_dash_for_normal_stdout() -> None:
+    args = parse_args(["offense.pln", "--normal-out", "-"])
+    assert args.normal_out == "-"
 
 
-def test_parse_args_accepts_dash_for_normal() -> None:
-    args = parse_args(["offense.pln", "--output", "-"])
-    assert args.output == "-"
+def test_parse_args_accepts_dash_for_special_stdout() -> None:
+    args = parse_args(["offense.pln", "--special-out", "-"])
+    assert args.special_out == "-"
 
 
-def test_parse_args_accepts_dash_for_special() -> None:
-    args = parse_args(["offense.pln", "--output-special", "-"])
-    assert args.output_special == "-"
+def test_parse_args_accepts_dash_for_both_stdout() -> None:
+    args = parse_args(["offense.pln", "--normal-out", "-", "--special-out", "-"])
+    assert args.normal_out == "-"
+    assert args.special_out == "-"
 
 
-def test_parse_args_accepts_dash_for_both() -> None:
-    args = parse_args(["offense.pln", "--output", "-", "--output-special", "-"])
-    assert args.output == "-"
-    assert args.output_special == "-"
-
-
-def test_parse_args_rejects_same_file_for_both() -> None:
+def test_parse_args_rejects_same_file_for_both_outputs() -> None:
     with pytest.raises(SystemExit):
-        parse_args(["offense.pln", "--output", "same.txt", "--output-special", "same.txt"])
+        parse_args(["offense.pln", "--normal-out", "same.txt", "--special-out", "same.txt"])
 
 
 def test_parse_args_allows_dash_alongside_file() -> None:
-    args = parse_args(["offense.pln", "--output", "-", "--output-special", "spec.txt"])
-    assert args.output == "-"
-    assert args.output_special == "spec.txt"
+    args = parse_args(["offense.pln", "--normal-out", "-", "--special-out", "spec.txt"])
+    assert args.normal_out == "-"
+    assert args.special_out == "spec.txt"
 
 
 def test_parse_args_accepts_sort_name() -> None:
@@ -85,147 +87,176 @@ def test_parse_args_rejects_invalid_sort() -> None:
         parse_args(["offense.pln", "--sort", "bogus"])
 
 
-# ---------- main: default (no flags) prints both with headers ----------
+# ---------- default mode: stdout with headers (both sections) ----------
 
 
-def test_main_default_prints_both_sections_with_headers(
+def test_main_default_offense_stdout_with_headers_matches_fixture(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     rc = main([str(OFFENSE_PATH)])
     assert rc == 0
-    out = capsys.readouterr().out
-    assert "=== Normal ===" in out
-    assert "=== Special ===" in out
-    # Normal precedes Special
-    assert out.index("=== Normal ===") < out.index("=== Special ===")
-    assert KNOWN_NORMAL_NAME in out
-    assert KNOWN_SPECIAL_NAME in out
+    assert _captured_stdout_lines(capsys) == _expected("offense_stdout.txt")
 
 
-def test_main_default_special_header_follows_normal_section(
+def test_main_default_defense_stdout_with_headers_matches_fixture(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    rc = main([str(OFFENSE_PATH)])
+    rc = main([str(DEFENSE_PATH)])
     assert rc == 0
-    out = capsys.readouterr().out
-    # The special header follows the last normal play directly.
-    assert "\n=== Special ===" in out
+    assert _captured_stdout_lines(capsys) == _expected("defense_stdout.txt")
 
 
-# ---------- main: --output FILE only ----------
-
-
-def test_main_normal_only_to_file_no_header(tmp_path: Path) -> None:
-    output_path = tmp_path / "plays.txt"
-    rc = main([str(OFFENSE_PATH), "--output", str(output_path)])
-    assert rc == 0
-    text = output_path.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    assert len(lines) == 64
-    assert "===" not in text
-    assert KNOWN_NORMAL_NAME in lines
-    assert KNOWN_SPECIAL_NAME not in lines
-
-
-def test_main_normal_only_to_file_does_not_emit_to_stdout(
-    tmp_path: Path,
+def test_main_default_offense_sort_name_with_headers_matches_fixture(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    output_path = tmp_path / "plays.txt"
-    rc = main([str(OFFENSE_PATH), "--output", str(output_path)])
+    rc = main([str(OFFENSE_PATH), "--sort", "name"])
     assert rc == 0
-    out = capsys.readouterr().out
-    assert out == ""
+    assert _captured_stdout_lines(capsys) == _expected("offense_by_name_stdout.txt")
 
 
-# ---------- main: --output-special FILE only ----------
+# ---------- dash mode: stdout without headers (single section) ----------
 
 
-def test_main_special_only_to_file_no_header_with_blanks(tmp_path: Path) -> None:
-    output_path = tmp_path / "spec.txt"
-    rc = main([str(OFFENSE_PATH), "--output-special", str(output_path)])
+def test_main_normal_dash_offense_stdout_without_header_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(OFFENSE_PATH), "--normal-out", "-"])
     assert rc == 0
-    text = output_path.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    assert len(lines) == 10
-    assert "===" not in text
-    assert lines[0] == "BCFGPAT"
-    # Slots 5-8 are empty in offense fixture
-    assert lines[4] == ""
-    assert lines[5] == ""
-    assert lines[6] == ""
-    assert lines[7] == ""
-    assert KNOWN_NORMAL_NAME not in lines
+    assert _captured_stdout_lines(capsys) == _expected("offense_normal_by_slot_txt.txt")
 
 
-# ---------- main: both --output and --output-special as files ----------
+def test_main_normal_dash_defense_stdout_without_header_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(DEFENSE_PATH), "--normal-out", "-"])
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("defense_normal_by_slot_txt.txt")
 
 
-def test_main_both_to_files_writes_each_section(tmp_path: Path) -> None:
+def test_main_special_dash_offense_stdout_without_header_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(OFFENSE_PATH), "--special-out", "-"])
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("offense_special_txt.txt")
+
+
+def test_main_special_dash_defense_stdout_without_header_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(DEFENSE_PATH), "--special-out", "-"])
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("defense_special_txt.txt")
+
+
+# ---------- dash mode: stdout without headers (both sections combined) ----------
+
+
+def test_main_both_dashes_offense_stdout_without_headers_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(OFFENSE_PATH), "--normal-out", "-", "--special-out", "-"])
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("offense_stdout_dash.txt")
+
+
+def test_main_both_dashes_defense_stdout_without_headers_matches_fixture(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc = main([str(DEFENSE_PATH), "--normal-out", "-", "--special-out", "-"])
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("defense_stdout_dash.txt")
+
+
+# ---------- file mode: write to disk without headers ----------
+
+
+def test_main_normal_to_file_offense_matches_fixture(tmp_path: Path) -> None:
+    out_path = tmp_path / "plays.txt"
+    rc = main([str(OFFENSE_PATH), "--normal-out", str(out_path)])
+    assert rc == 0
+    assert _file_lines(out_path) == _expected("offense_normal_by_slot_txt.txt")
+
+
+def test_main_normal_to_file_defense_matches_fixture(tmp_path: Path) -> None:
+    out_path = tmp_path / "plays.txt"
+    rc = main([str(DEFENSE_PATH), "--normal-out", str(out_path)])
+    assert rc == 0
+    assert _file_lines(out_path) == _expected("defense_normal_by_slot_txt.txt")
+
+
+def test_main_special_to_file_offense_matches_fixture(tmp_path: Path) -> None:
+    out_path = tmp_path / "spec.txt"
+    rc = main([str(OFFENSE_PATH), "--special-out", str(out_path)])
+    assert rc == 0
+    assert _file_lines(out_path) == _expected("offense_special_txt.txt")
+
+
+def test_main_special_to_file_defense_matches_fixture(tmp_path: Path) -> None:
+    out_path = tmp_path / "spec.txt"
+    rc = main([str(DEFENSE_PATH), "--special-out", str(out_path)])
+    assert rc == 0
+    assert _file_lines(out_path) == _expected("defense_special_txt.txt")
+
+
+def test_main_both_to_separate_files_offense_match_fixtures(tmp_path: Path) -> None:
     n_path = tmp_path / "n.txt"
     s_path = tmp_path / "s.txt"
     rc = main(
         [
             str(OFFENSE_PATH),
-            "--output",
+            "--normal-out",
             str(n_path),
-            "--output-special",
+            "--special-out",
             str(s_path),
         ]
     )
     assert rc == 0
-    n_lines = n_path.read_text(encoding="utf-8").splitlines()
-    s_lines = s_path.read_text(encoding="utf-8").splitlines()
-    assert len(n_lines) == 64
-    assert len(s_lines) == 10
-    assert KNOWN_NORMAL_NAME in n_lines
-    assert KNOWN_SPECIAL_NAME in s_lines
+    assert _file_lines(n_path) == _expected("offense_normal_by_slot_txt.txt")
+    assert _file_lines(s_path) == _expected("offense_special_txt.txt")
 
 
-# ---------- main: dash variants ----------
+def test_main_both_to_separate_files_defense_match_fixtures(tmp_path: Path) -> None:
+    n_path = tmp_path / "n.txt"
+    s_path = tmp_path / "s.txt"
+    rc = main(
+        [
+            str(DEFENSE_PATH),
+            "--normal-out",
+            str(n_path),
+            "--special-out",
+            str(s_path),
+        ]
+    )
+    assert rc == 0
+    assert _file_lines(n_path) == _expected("defense_normal_by_slot_txt.txt")
+    assert _file_lines(s_path) == _expected("defense_special_txt.txt")
 
 
-def test_main_dash_for_normal_to_stdout_no_header(
+def test_main_file_output_suppresses_stdout(
+    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    rc = main([str(OFFENSE_PATH), "--output", "-"])
+    out_path = tmp_path / "plays.txt"
+    rc = main([str(OFFENSE_PATH), "--normal-out", str(out_path)])
     assert rc == 0
-    out = capsys.readouterr().out
-    assert "===" not in out
-    assert KNOWN_NORMAL_NAME in out
-    assert KNOWN_SPECIAL_NAME not in out
-    lines = out.splitlines()
-    assert len(lines) == 64
+    assert capsys.readouterr().out == ""
 
 
-def test_main_dash_for_special_to_stdout_no_header(
+def test_main_special_file_output_suppresses_stdout(
+    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    rc = main([str(OFFENSE_PATH), "--output-special", "-"])
+    out_path = tmp_path / "spec.txt"
+    rc = main([str(OFFENSE_PATH), "--special-out", str(out_path)])
     assert rc == 0
-    out = capsys.readouterr().out
-    assert "===" not in out
-    assert KNOWN_SPECIAL_NAME in out
-    assert KNOWN_NORMAL_NAME not in out
-    lines = out.splitlines()
-    assert len(lines) == 10
+    assert capsys.readouterr().out == ""
 
 
-def test_main_dash_for_both_normal_first_no_separator(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    rc = main([str(OFFENSE_PATH), "--output", "-", "--output-special", "-"])
-    assert rc == 0
-    out = capsys.readouterr().out
-    assert "===" not in out
-    lines = out.splitlines()
-    assert len(lines) == 74  # 64 normal + 10 special, no separator
-    # Normal first
-    assert lines[0] == "OR45RL01"
-    assert KNOWN_SPECIAL_NAME in lines[64:]
+# ---------- mixed dash + file ----------
 
 
-def test_main_mixed_dash_and_file(
+def test_main_normal_to_file_special_to_stdout_matches_fixtures(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -233,26 +264,40 @@ def test_main_mixed_dash_and_file(
     rc = main(
         [
             str(OFFENSE_PATH),
-            "--output",
+            "--normal-out",
             str(n_path),
-            "--output-special",
+            "--special-out",
             "-",
         ]
     )
     assert rc == 0
-    out = capsys.readouterr().out
-    assert "===" not in out
-    assert KNOWN_SPECIAL_NAME in out
-    assert KNOWN_NORMAL_NAME not in out
-    n_lines = n_path.read_text(encoding="utf-8").splitlines()
-    assert len(n_lines) == 64
-    assert KNOWN_NORMAL_NAME in n_lines
+    assert _file_lines(n_path) == _expected("offense_normal_by_slot_txt.txt")
+    assert _captured_stdout_lines(capsys) == _expected("offense_special_txt.txt")
+
+
+def test_main_normal_to_stdout_special_to_file_matches_fixtures(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    s_path = tmp_path / "s.txt"
+    rc = main(
+        [
+            str(OFFENSE_PATH),
+            "--normal-out",
+            "-",
+            "--special-out",
+            str(s_path),
+        ]
+    )
+    assert rc == 0
+    assert _captured_stdout_lines(capsys) == _expected("offense_normal_by_slot_txt.txt")
+    assert _file_lines(s_path) == _expected("offense_special_txt.txt")
 
 
 # ---------- sort behavior ----------
 
 
-def test_main_sort_name_only_affects_normal(tmp_path: Path) -> None:
+def test_main_sort_name_only_affects_normal_section(tmp_path: Path) -> None:
     n_path = tmp_path / "n.txt"
     s_path = tmp_path / "s.txt"
     rc = main(
@@ -260,44 +305,12 @@ def test_main_sort_name_only_affects_normal(tmp_path: Path) -> None:
             str(OFFENSE_PATH),
             "--sort",
             "name",
-            "--output",
+            "--normal-out",
             str(n_path),
-            "--output-special",
+            "--special-out",
             str(s_path),
         ]
     )
     assert rc == 0
-    n_lines = n_path.read_text(encoding="utf-8").splitlines()
-    # name-sorted normal: AF1AwagR is first in the EXPECTED_OFFENSE_BY_NAME list
-    assert n_lines[0] == "AF1AwagR"
-    s_lines = s_path.read_text(encoding="utf-8").splitlines()
-    # special is always slot order; first slot is BCFGPAT in offense fixture
-    assert s_lines[0] == "BCFGPAT"
-
-
-# ---------- defense gameplan basics ----------
-
-
-def test_main_default_works_on_defense(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    rc = main([str(DEFENSE_PATH)])
-    assert rc == 0
-    out = capsys.readouterr().out
-    assert "=== Normal ===" in out
-    assert "=== Special ===" in out
-    assert "NY31RL01" in out  # known normal in defense fixture
-    assert "CIN-KR" in out  # known special in defense fixture
-
-
-def test_main_special_only_for_defense_to_file_with_leading_blank(
-    tmp_path: Path,
-) -> None:
-    s_path = tmp_path / "s.txt"
-    rc = main([str(DEFENSE_PATH), "--output-special", str(s_path)])
-    assert rc == 0
-    lines = s_path.read_text(encoding="utf-8").splitlines()
-    assert len(lines) == 10
-    # Defense fixture has empty slot at index 0 (no FG/PAT defense set)
-    assert lines[0] == ""
-    assert lines[1] == "CIN-KR"
+    assert _file_lines(n_path) == _expected("offense_normal_by_name_txt.txt")
+    assert _file_lines(s_path) == _expected("offense_special_txt.txt")
