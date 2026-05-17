@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fbpro98-gameplanreader"
 version = "0.1.0"
-description = "Extracts a list of plays from a Front Page Sports Football Pro '98 game plan (.pln)"
+description = "Extracts a list of plays from a Front Page Sports Football Pro '98 game plan (.pln)."
 authors = [{ name = "Brian Jacobs" }]
 readme = "README.md"
 license = "MIT"
