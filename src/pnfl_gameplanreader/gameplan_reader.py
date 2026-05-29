@@ -69,8 +69,7 @@ class GamePlanReader:
         )
 
     def get_custom_special_plays(self) -> list[str]:
-        gameplan = self.pnfl_gameplan.gameplan
-        return ["" if play is None else play.name for play in gameplan.custom_special_plays]
+        return ["" if play is None else play.name for play in self.pnfl_gameplan.custom_special_plays]
 
     def write_normal_plays(self, stream: TextIO, *, sort: SortOrder = "slot") -> None:
         stream.write("\n".join(self.get_normal_plays(sort)) + "\n")
@@ -79,5 +78,4 @@ class GamePlanReader:
         stream.write("\n".join(self.get_custom_special_plays()) + "\n")
 
     def _get_normal_plays_by_slot(self) -> list[str]:
-        gameplan = self.pnfl_gameplan.gameplan
-        return ["" if play is None else play.name for play in gameplan.normal_plays]
+        return ["" if play is None else play.name for play in self.pnfl_gameplan.normal_plays]

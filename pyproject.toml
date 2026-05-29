@@ -11,7 +11,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
-dependencies = ["fbpro98-gameplan", "pnfl-gameplan", "pnfl-playpool"]
+dependencies = ["pnfl-gameplan", "pnfl-playpool"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pyright==1.1.409", "ruff", "ipython"]
