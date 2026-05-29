@@ -3,7 +3,7 @@ from __future__ import annotations
 from io import StringIO
 from pathlib import Path
 
-from fbpro98_gameplanreader.gameplan_reader import GamePlanReader
+from pnfl_gameplanreader.gameplan_reader import GamePlanReader
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 EXPECTED_DIR = TEST_DATA_DIR / "expected"

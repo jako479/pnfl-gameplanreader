@@ -1,8 +1,8 @@
-# fbpro98-gameplanreader
+# pnfl-gameplanreader
 
 Extracts a list of plays from Front Page Sports Football Pro '98 gameplan (`.pln`) files.
 
-Sits on top of the shared [`fbpro98-gameplan`](../fbpro98-gameplan) library rather than reimplementing the binary `.pln` parser. The library handles file parsing; this project is where CLI behavior and output formats belong.
+Sits on top of [`pnfl-gameplan`](../pnfl-gameplan) (which wraps [`fbpro98-gameplan`](../fbpro98-gameplan) with PNFL rule data). The library handles `.pln` parsing; this project is where CLI behavior and output formats belong.
 
 ## Setup
 
@@ -10,6 +10,8 @@ Sits on top of the shared [`fbpro98-gameplan`](../fbpro98-gameplan) library rath
 py -3.13 -m venv .venv
 .venv\Scripts\activate
 py -m pip install -e ..\fbpro98-gameplan
+py -m pip install -e ..\pnfl-playpool
+py -m pip install -e ..\pnfl-gameplan
 py -m pip install -e ".[dev]"
 ```
 
@@ -38,7 +40,12 @@ pnfl read-gameplan path\to\gameplan.pln --normal-out - --special-out -
 
 ## Building a Release
 
-This project is distributed as part of the [`pnfl`](../pnfl) umbrella CLI. See `pnfl/scripts/build_release.py` for release packaging.
+Ships these artifacts to the umbrella bundle:
+
+- `release/read-gameplan.bat` — launcher template
+- Python wheel (built by `pnfl/scripts/build_release.py`)
+
+Distributed as part of the [`pnfl`](../pnfl) umbrella CLI.
 
 ## Testing
 
@@ -46,4 +53,4 @@ This project is distributed as part of the [`pnfl`](../pnfl) umbrella CLI. See `
 pytest
 ```
 
-Cross-CLI pipeline tests (`read-gameplan` → `write-gameplan`) live in [`pnfl/tests/test_pipeline.py`](../pnfl/tests/test_pipeline.py).
+Cross-CLI pipeline tests (`read-gameplan` → `write-gameplan`) live in [`pnfl/tests/test_gameplan.py`](../pnfl/tests/test_gameplan.py).

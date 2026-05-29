@@ -8,8 +8,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO
 
-from fbpro98_gameplanreader.gameplan_reader import GamePlanReader
+from pnfl_gameplanreader.gameplan_reader import GamePlanReader
 
+PROG = "pnfl read-gameplan"
 STDOUT_TOKEN = "-"
 NORMAL_HEADER = "=== Normal ==="
 SPECIAL_HEADER = "=== Special ==="
@@ -31,7 +32,7 @@ def open_output(dest: str) -> Iterator[TextIO]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="pnfl read-gameplan",
+        prog=PROG,
         description="Read a .pln file and list plays from the gameplan.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
@@ -47,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
             "\n"
             "Pipeline-friendly examples:\n"
             "  pnfl read-gameplan src.pln --normal-out - | pnfl write-gameplan dest.pln --normal-plays -\n"
-            "  pnfl read-gameplan src.pln --normal-out - --special-out - | pnfl write-gameplan dest.pln --normal-plays - --special-plays -\n"
+            "  pnfl read-gameplan src.pln --normal-out - --special-out - | pnfl write-gameplan dest.pln --normal-plays - --special-plays -\n"  # noqa: E501
         ),
     )
     parser.add_argument("gameplan_path", help="Path to the .pln file")
@@ -98,20 +99,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         level=logging.INFO,
         format="%(levelname)s: %(message)s",
     )
-    reader = GamePlanReader(args.gameplan_path)
+    try:
+        reader = GamePlanReader(args.gameplan_path)
 
-    if args.normal_out is None and args.special_out is None:
-        sys.stdout.write(f"{NORMAL_HEADER}\n")
-        reader.write_normal_plays(sys.stdout, sort=args.sort)
-        sys.stdout.write(f"\n{SPECIAL_HEADER}\n")
-        reader.write_custom_special_plays(sys.stdout)
-        return 0
-    if args.normal_out is not None:
-        with open_output(args.normal_out) as f:
-            reader.write_normal_plays(f, sort=args.sort)
-    if args.special_out is not None:
-        with open_output(args.special_out) as f:
-            reader.write_custom_special_plays(f)
+        if args.normal_out is None and args.special_out is None:
+            sys.stdout.write(f"{NORMAL_HEADER}\n")
+            reader.write_normal_plays(sys.stdout, sort=args.sort)
+            sys.stdout.write(f"\n{SPECIAL_HEADER}\n")
+            reader.write_custom_special_plays(sys.stdout)
+            return 0
+        if args.normal_out is not None:
+            with open_output(args.normal_out) as f:
+                reader.write_normal_plays(f, sort=args.sort)
+        if args.special_out is not None:
+            with open_output(args.special_out) as f:
+                reader.write_custom_special_plays(f)
+    except OSError as error:
+        print(f"{PROG}: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

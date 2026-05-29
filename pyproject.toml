@@ -3,7 +3,7 @@ requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fbpro98-gameplanreader"
+name = "pnfl-gameplanreader"
 version = "0.1.0"
 description = "Extracts a list of plays from a Front Page Sports Football Pro '98 game plan (.pln)."
 authors = [{ name = "Brian Jacobs" }]
@@ -11,17 +11,17 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
-dependencies = ["fbpro98-gameplan"]
+dependencies = ["fbpro98-gameplan", "pnfl-gameplan", "pnfl-playpool"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pyright==1.1.409", "ruff", "ipython"]
 
 [project.entry-points."pnfl.commands"]
-read-gameplan = "fbpro98_gameplanreader.cli:main"
+read-gameplan = "pnfl_gameplanreader.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/jako479/fbpro98-gameplanreader"
-Repository = "https://github.com/jako479/fbpro98-gameplanreader"
+Homepage = "https://github.com/jako479/pnfl-gameplanreader"
+Repository = "https://github.com/jako479/pnfl-gameplanreader"
 
 [tool.setuptools.packages.find]
 where = ["src"]
