@@ -208,11 +208,10 @@ def test_main_multiple_files_summary(capsys: pytest.CaptureFixture[str]) -> None
     assert "across 2 file(s)" in out
 
 
-def test_main_missing_path_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_missing_path_exit_2(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     rc = main([str(tmp_path / "nope.pln")])
     assert rc == 2
-    err = capsys.readouterr().err
-    assert "does not exist" in err
+    assert "does not exist" in caplog.text
 
 
 def test_main_malformed_pln_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

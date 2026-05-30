@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import glob
-import sys
+import logging
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
@@ -25,6 +25,7 @@ from pnfl_playpool import PlayPool, read_play_pool
 from pnfl_gameplanreader.config import load_config
 
 PROG = "pnfl check-gameplan"
+logger = logging.getLogger(__name__)
 _GLOB_CHARS = frozenset("*?[")
 
 
@@ -164,9 +165,13 @@ def check_file(path: Path, play_pool: PlayPool) -> tuple[int, str]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s: %(message)s",
+    )
     files, path_errors = collect_files(args.paths, recursive=args.recursive)
     for error in path_errors:
-        print(f"{PROG}: {error}", file=sys.stderr)
+        logger.error("%s: %s", PROG, error)
     if not files:
         return 2
 
@@ -174,7 +179,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         config = load_config(path=args.config, play_path=args.play_path)
         play_pool = read_play_pool(config.play_path)
     except (OSError, ValueError) as error:
-        print(f"{PROG}: {error}", file=sys.stderr)
+        logger.error("%s: %s", PROG, error)
         return 2
 
     total_files = 0

@@ -11,6 +11,7 @@ from typing import TextIO
 from pnfl_gameplanreader.gameplan_reader import GamePlanReader
 
 PROG = "pnfl read-gameplan"
+logger = logging.getLogger(__name__)
 STDOUT_TOKEN = "-"
 NORMAL_HEADER = "=== Normal ==="
 SPECIAL_HEADER = "=== Special ==="
@@ -115,7 +116,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             with open_output(args.special_out) as f:
                 reader.write_custom_special_plays(f)
     except OSError as error:
-        print(f"{PROG}: {error}", file=sys.stderr)
+        logger.error("%s: %s", PROG, error)
         return 1
     return 0
 
