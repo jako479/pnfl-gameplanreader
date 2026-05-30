@@ -1,22 +1,22 @@
 # Changelog
 
-- `pnfl check-gameplan` CLI: file / directory / glob paths, `-r/--recursive`, per-file `OK (N normal, M custom special)` or violation list, summary, exit `0` / `1` / `2`. Play pool from `check-gameplan.ini` `[Settings] PlayPath` or `--play-path`.
-- `pnfl_gameplanreader.config` module (INI lookup at `cwd` or `cwd/config/`, Windows-default fallback).
-- Rename `fbpro98-gameplanreader` / `fbpro98_gameplanreader` → `pnfl-gameplanreader` / `pnfl_gameplanreader`; `pnfl read-gameplan` command name unchanged.
-- `GamePlanReader` wraps a `PnflGamePlan` internally; `rules` / `play_pool` kwargs default so read-only callers don't need to change.
-- Drop direct `fbpro98-gameplan` dependency; reader uses `PnflGamePlan` forwarders.
-- CLI module renames: `cli.py` → `reader_cli.py`, `check_cli.py` unchanged but entry-point updated.
-- Pin malformed-`.pln` test coverage in `check_file` and `main`.
+- `pnfl check-gameplan` CLI: file / dir / glob paths, `-r/--recursive`, per-file `OK` or violations, exit `0` / `1` / `2`.
+- Play pool resolved from `check-gameplan.ini` `[Settings] PlayPath` or `--play-path`.
+- `pnfl_gameplanreader.config` module (INI lookup at `cwd`, `cwd/config/`, Windows-default fallback).
+- Rename `fbpro98-gameplanreader` → `pnfl-gameplanreader`; `pnfl read-gameplan` command name unchanged.
+- `GamePlanReader` wraps `PnflGamePlan`; `rules` / `play_pool` kwargs default for read-only callers.
+- Drop direct `fbpro98-gameplan` dep; reader uses `PnflGamePlan` forwarders.
+- CLI module rename: `cli.py` → `reader_cli.py`; new `check_cli.py`.
+- Malformed-`.pln` test coverage in `check_file` and `main`.
 - Initial gameplan reader CLI with fixture tests.
 - CLI parsing tests and logging setup.
 - `read-gameplan.bat` launcher.
 - `pnfl.commands` entry point for the umbrella CLI.
-- Support for custom special plays and stdout output.
-- STATUS.md and TEST_STATUS.md documentation.
-- Line-ending rules in .editorconfig.
+- Custom special plays and stdout output support.
+- `STATUS.md`, `TEST_STATUS.md`, `.editorconfig`.
 - Migrated to the `pnfl` umbrella CLI.
-- Migrated to the new gameplan `normal_plays` tuple and `GamePlan` class name.
+- Migrated to `normal_plays` tuple and `GamePlan` class name.
 - Renamed CLI output flags; switched tests to fixture files.
 - Standardized project tooling config.
 - Cleaned up package `__init__.py`.
-- Removed `sys.path` hacks from conftest files in favor of editable installs.
+- Removed `sys.path` hacks in conftest in favor of editable installs.
