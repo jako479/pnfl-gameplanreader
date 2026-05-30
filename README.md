@@ -1,42 +1,53 @@
 # pnfl-gameplanreader
 
-Extracts a list of plays from Front Page Sports Football Pro '98 gameplan (`.pln`) files.
+Two CLI commands over Front Page Sports Football Pro '98 gameplan (`.pln`) files. Sits on [`pnfl-gameplan`](../pnfl-gameplan).
 
-Sits on top of [`pnfl-gameplan`](../pnfl-gameplan) (which wraps [`fbpro98-gameplan`](../fbpro98-gameplan) with PNFL rule data). The library handles `.pln` parsing; this project is where CLI behavior and output formats belong.
+- `pnfl read-gameplan` — extract the play lists from a `.pln`.
+- `pnfl check-gameplan` — validate one or more `.pln` files against the PNFL rule set.
 
 ## Setup
 
 ```bash
 py -3.13 -m venv .venv
 .venv\Scripts\activate
-py -m pip install -e ..\fbpro98-gameplan
-py -m pip install -e ..\pnfl-playpool
-py -m pip install -e ..\pnfl-gameplan
-py -m pip install -e ".[dev]"
+py -m pip install -e ..\fbpro98-gameplan -e ..\pnfl-playpool -e ..\pnfl-gameplan -e ".[dev]"
 ```
 
-## Usage
-
-Distributed via the [`pnfl`](../pnfl) umbrella CLI:
+## `read-gameplan`
 
 ```bash
-pnfl read-gameplan path\to\gameplan.pln
-pnfl read-gameplan path\to\gameplan.pln --sort name
-pnfl read-gameplan path\to\gameplan.pln --normal-out plays.txt
-pnfl read-gameplan path\to\gameplan.pln --normal-out - --special-out -
+pnfl read-gameplan gameplan.pln                              # both sections to stdout, headered
+pnfl read-gameplan gameplan.pln --sort name                  # name-sorted normal plays
+pnfl read-gameplan gameplan.pln --normal-out plays.txt       # 64 lines to file, no header
+pnfl read-gameplan gameplan.pln --normal-out - --special-out -  # 74 lines to stdout, pipeable to write-gameplan
 ```
 
-### Output modes
+- Default (no flags): headered stdout, human-only — **not** consumable by `write-gameplan`.
+- `--normal-out` / `--special-out FILE`: headerless 64 / 10 lines. `-` means stdout. Both flags with `-` together → 74 lines suitable for piping into `pnfl write-gameplan`.
+- `--sort slot` (default): preserves positions, round-trippable. `--sort name`: filtered + sorted, variable length, not round-trippable.
 
-- **Default (no flags)** — both sections to stdout with `=== Normal ===` and `=== Special ===` headers and a blank line between them. Intended for human reading. **Not** consumable by `pnfl write-gameplan`.
-- **`--normal-out FILE`** — exactly 64 lines (one per normal slot, blank lines for empty slots), no header.
-- **`--special-out FILE`** — exactly 10 lines (one per `special_category`), no header.
-- **`-` as FILE** — sends that section to stdout instead of disk. Both flags with `-` produce 74 lines (64 normal + 10 special) on stdout, suitable for piping into `pnfl write-gameplan`.
+## `check-gameplan`
 
-### Sort order
+```bash
+pnfl check-gameplan gameplan.pln
+pnfl check-gameplan Off1.pln Off2.pln Def1.pln Def2.pln
+pnfl check-gameplan path\to\directory [-r]
+```
 
-- `--sort slot` (default) — preserves slot positions; empty slots are blank lines; the file is round-trippable.
-- `--sort name` — filters out empty slots and sorts case-insensitively. Variable line count; **not** round-trippable.
+Each `PATH` is a `.pln` file, directory (top-level scan; `-r` for tree), or glob (expanded internally). Play pool from `check-gameplan.ini` `[Settings] PlayPath` (same lookup as `write-gameplan.ini`) or `--play-path DIR`.
+
+Per-file output:
+
+```
+Off1.pln: OK (60 normal, 6 custom special)
+Off2.pln: 2 violation(s) (58 normal, 5 custom special)
+  [PSL] Offensive category 'PSL' has 4 plays; PNFL requires at least 5.
+  Duplicate play 'OR45RL01' at slot 5 (2-1) (already at slot 1 (1-1))
+
+4 file(s) checked, 2 violation(s) across 1 file(s).
+```
+
+Exit codes: `0` clean, `1` violations found, `2` usage / I/O error.
 
 ## Building a Release
 

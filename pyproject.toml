@@ -17,7 +17,8 @@ dependencies = ["pnfl-gameplan", "pnfl-playpool"]
 dev = ["pytest", "pyright==1.1.409", "ruff", "ipython"]
 
 [project.entry-points."pnfl.commands"]
-read-gameplan = "pnfl_gameplanreader.cli:main"
+read-gameplan = "pnfl_gameplanreader.reader_cli:main"
+check-gameplan = "pnfl_gameplanreader.check_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/jako479/pnfl-gameplanreader"

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pnfl_gameplanreader.cli import main, parse_args
+from pnfl_gameplanreader.reader_cli import main, parse_args
 
 TEST_DATA_DIR = Path(__file__).resolve().parent / "data"
 EXPECTED_DIR = TEST_DATA_DIR / "expected"
